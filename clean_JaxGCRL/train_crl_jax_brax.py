@@ -624,7 +624,7 @@ if __name__ == "__main__":
         
         def log_metrics(metrics):
             print(f"\n{'-'*40}")
-            print(f"Evaluation Metrics")
+            print(f"Training Metrics")
             print(f"{'-'*40}")
             print(f"Wall Time: {metrics['eval/walltime']:.2f} seconds")
             print(f"Training Speed (SPS): {metrics['training/sps']:.2f} steps/sec")
