@@ -9,6 +9,7 @@ import pickle
 import random
 import wandb_osh
 import numpy as np
+from tqdm import tqdm
 import flax.linen as nn
 import jax.numpy as jnp
 
@@ -30,9 +31,9 @@ class Args:
     seed: int = 1
     torch_deterministic: bool = True
     cuda: bool = True
-    track: bool = False
+    track: bool = True
     wandb_project_name: str = "exploration"
-    wandb_entity: str = 'raj19'
+    wandb_entity: str = 'willinvest'
     wandb_mode: str = 'online'
     wandb_dir: str = '.'
     wandb_group: str = '.'
@@ -50,7 +51,7 @@ class Args:
     # Algorithm specific arguments
     total_env_steps: int = 50000000
     num_epochs: int = 50
-    num_envs: int = 1024
+    num_envs: int = 512
     num_eval_envs: int = 128
     actor_lr: float = 3e-4
     critic_lr: float = 3e-4
@@ -595,7 +596,7 @@ if __name__ == "__main__":
         episode_length=args.episode_length,
         key=eval_env_key,
     )
-
+    epoch_pbar = tqdm(total=args.num_epochs, desc="Epoch Progress", unit="epoch")
     training_walltime = 0
     print('starting training....')
     for ne in range(args.num_epochs):
@@ -620,8 +621,42 @@ if __name__ == "__main__":
         }
 
         metrics = evaluator.run_evaluation(training_state, metrics)
+        
+        def log_metrics(metrics):
+            print(f"\n{'-'*40}")
+            print(f"Evaluation Metrics")
+            print(f"{'-'*40}")
+            print(f"Wall Time: {metrics['eval/walltime']:.2f} seconds")
+            print(f"Training Speed (SPS): {metrics['training/sps']:.2f} steps/sec")
+            print(f"Training Time: {metrics['training/walltime']:.2f} seconds")
+            print(f"Environment Steps: {metrics['training/envsteps']:.0f}")
+            print(f"Actor Loss: {metrics['training/actor_loss']:.4f}")
+            print(f"Alpha Loss: {metrics['training/alph_aloss']:.4e}")
+            print(f"Buffer Size: {metrics['training/buffer_current_size']:.0f}")
+            print(f"Categorical Accuracy: {metrics['training/categorical_accuracy']:.2%}")
+            print(f"Critic Loss: {metrics['training/critic_loss']:.4f}")
+            print(f"Log Alpha: {metrics['training/log_alpha']:.4f}")
+            print(f"Logits (Negative): {metrics['training/logits_neg']:.4f}")
+            print(f"Logits (Positive): {metrics['training/logits_pos']:.4f}")
+            print(f"Logsumexp: {metrics['training/logsumexp']:.4f}")
+            print(f"Sample Entropy: {metrics['training/sample_entropy']:.4f}")
+    
+            print(f"\n{'-'*40}")
+            print(f"Evaluation Episode Metrics")
+            print(f"{'-'*40}")
+            print(f"Episode Reward: {metrics['eval/episode_reward']:.4f}")
+            print(f"Episode Success: {metrics['eval/episode_success']:.4f}")
+            print(f"Success (Easy): {metrics['eval/episode_success_easy']:.4f}")
+            print(f"Episode Distance: {metrics['eval/episode_dist']:.4f}")
+            print(f"Distance from Origin: {metrics['eval/episode_distance_from_origin']:.4f}")
+            print(f"Success (Any): {metrics['eval/episode_success_any']:.4f}")
+            print(f"Avg Episode Length: {metrics['eval/avg_episode_length']:.4f}")
+            print(f"Evaluation Time: {metrics['eval/epoch_eval_time']:.2f} seconds")
+            print(f"Evaluation Speed (SPS): {metrics['eval/sps']:.2f} steps/sec")
+            print(f"{'-'*40}\n")
 
-        print(metrics)
+        log_metrics(metrics)
+        epoch_pbar.update(1)
 
         if args.checkpoint:
             # Save current policy and critic params.
@@ -640,6 +675,8 @@ if __name__ == "__main__":
         params = (training_state.alpha_state.params, training_state.actor_state.params, training_state.critic_state.params)
         path = f"{save_path}/final.pkl"
         save_params(path, params)
+        
+    epoch_pbar.close()
         
 # (50000000 - 1024 x 1000) / 50 x 1024 x 62 = 15        #number of actor steps per epoch (which is equal to the number of training steps)
 # 1024 x 999 / 256 = 4000                               #number of gradient steps per actor step 
