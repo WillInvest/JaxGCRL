@@ -203,14 +203,21 @@ class AntMaze(PipelineEnv):
             rng1, (self.sys.q_size(),), minval=low, maxval=hi
         )
         qd = hi * jax.random.normal(rng2, (self.sys.qd_size(),))
-
+        print(f"q: {q}")
+        print(f"qd: {qd}")
         # set the target q, qd
         _, target = self._random_target(rng)
+        print(f"target: {target}")
         q = q.at[-2:].set(target)
         qd = qd.at[-2:].set(0)
+        print("after add the goal")
+        print(f"q: {q}")
+        print(f"qd: {qd}")
 
         pipeline_state = self.pipeline_init(q, qd)
         obs = self._get_obs(pipeline_state)
+        print(f"pipeline_state: {pipeline_state}")
+        print(f"obs: {obs}")
 
         reward, done, zero = jp.zeros(3)
         metrics = {
@@ -301,3 +308,17 @@ class AntMaze(PipelineEnv):
         """Returns a random target location chosen from possibilities specified in the maze layout."""
         idx = jax.random.randint(rng, (1,), 0, len(self.possible_goals))
         return rng, jp.array(self.possible_goals[idx])[0]
+    
+    
+if __name__ == "__main__":
+    import brax
+    from brax import envs
+    from brax.io import html
+
+    # Create the Ant Maze environment
+    maze_env = envs.create(env_name="ant")  # Replace with your specific environment if necessary
+
+    # Reset the environment
+    state = maze_env.reset(rng=jax.random.PRNGKey(0))
+
+    

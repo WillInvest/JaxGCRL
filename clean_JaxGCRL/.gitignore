@@ -1,0 +1,5 @@
+*.avi
+wandb/
+video/
+logs/
+*.zip

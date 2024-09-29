@@ -56,7 +56,7 @@ class Args:
     actor_lr: float = 3e-4
     critic_lr: float = 3e-4
     alpha_lr: float = 3e-4
-    batch_size: int = 256
+    batch_size: int = 128
     gamma: float = 0.99
     logsumexp_penalty_coeff: float = 0.1
 
